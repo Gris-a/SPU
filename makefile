@@ -8,7 +8,7 @@ obj:
 a.out: obj/main.o obj/log.o obj/compiler.o obj/SPU.o obj/stack.o obj/general.o
 	@g++ $(CFLAGS)  $^ -o $@
 
-obj/main.o: source/main.cpp include/compiler/compiler.h include/SPU/SPU.h include/general/general.h include/general/commands.h include/stack/stack.h include/general/log.h
+obj/main.o: main.cpp include/compiler/compiler.h include/SPU/SPU.h include/general/general.h include/general/commands.h include/stack/stack.h include/general/log.h
 	@g++ $(CFLAGS)  -c $< -o $@
 
 obj/general.o: source/general/general.cpp include/general/general.h include/general/commands.h include/general/log.h
