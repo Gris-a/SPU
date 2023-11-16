@@ -42,7 +42,6 @@ static int ExecInstruction(char *instructions, size_t *pos, Processor *SPU)
 {
     SPU_VER(SPU, EXIT_FAILURE);
 
-    SPU_DUMP(SPU);
     Command cmd = {};
 
     GetVal(&cmd, instructions, pos, sizeof(Command));
