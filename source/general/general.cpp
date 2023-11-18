@@ -3,7 +3,7 @@
 
 #include "../../include/general/general.h"
 
-static int FormatAssert(const char *const path, FILE *b_code)
+static bool IsFormatValid(const char *const path, FILE *b_code)
 {
     unsigned b_code_keyword = 0;
     fread(&b_code_keyword, sizeof(unsigned), 1, b_code);
@@ -14,7 +14,7 @@ static int FormatAssert(const char *const path, FILE *b_code)
 
         fclose(b_code);
 
-        return EXIT_FAILURE;
+        return false;
     }
 
     unsigned char b_code_ASM_ver = 0;
@@ -27,10 +27,10 @@ static int FormatAssert(const char *const path, FILE *b_code)
                         "Supported SPU version: %d.\n", b_code_ASM_ver, path, ASM_VER, SPU_VER);
         fclose(b_code);
 
-        return EXIT_FAILURE;
+        return false;
     }
 
-    return EXIT_SUCCESS;
+    return true;
 }
 
 char *GetInst(const char *const path, size_t *size)
@@ -38,9 +38,10 @@ char *GetInst(const char *const path, size_t *size)
     ASSERT(path, return NULL);
 
     FILE *b_code = fopen(path, "rb");
+
     ASSERT(b_code, return NULL);
 
-    if(FormatAssert(path, b_code))
+    if(!IsFormatValid(path, b_code))
     {
         fclose(b_code);
 
@@ -50,8 +51,8 @@ char *GetInst(const char *const path, size_t *size)
     fread(size, sizeof(size_t), 1, b_code);
 
     char *instructions = (char *)calloc(*size, sizeof(char));
-    ASSERT(instructions, fclose(b_code);
-                         return NULL);
+
+    ASSERT(instructions, fclose(b_code); return NULL);
 
     fread(instructions, sizeof(char), *size, b_code);
 

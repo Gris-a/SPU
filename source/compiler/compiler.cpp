@@ -16,18 +16,18 @@ static int ArgsProcessing(FILE *source, Command *command, char *b_code, size_t *
 {
     if(command->arg_c == 0)
     {
-        EXEC_ASSERT(SetVal(command, b_code, pos, sizeof(Command)), return EXIT_FAILURE);
+        SetVal(command, b_code, pos, sizeof(Command));
 
         return EXIT_SUCCESS;
     }
 
     data_t arg_val = 0;
-    if(fscanf(source, DTS, &arg_val))
+    if(fscanf(source, DATA_FORMAT, &arg_val))
     {
         command->arg_t = DATA_T;
 
-        EXEC_ASSERT(SetVal(command , b_code, pos, sizeof(Command)), return EXIT_FAILURE);
-        EXEC_ASSERT(SetVal(&arg_val, b_code, pos, sizeof(data_t )), return EXIT_FAILURE);
+        SetVal(command , b_code, pos, sizeof(Command));
+        SetVal(&arg_val, b_code, pos, sizeof(data_t ));
 
         return EXIT_SUCCESS;
     }
@@ -43,8 +43,8 @@ static int ArgsProcessing(FILE *source, Command *command, char *b_code, size_t *
 
             unsigned char reg_id = (unsigned char)(arg[2] - 'a');
 
-            EXEC_ASSERT(SetVal(command, b_code, pos, sizeof(Command)), return EXIT_FAILURE);
-            EXEC_ASSERT(SetVal(&reg_id, b_code, pos, sizeof(char   )), return EXIT_FAILURE);
+            SetVal(command, b_code, pos, sizeof(Command));
+            SetVal(&reg_id, b_code, pos, sizeof(char   ));
         }
         else
         {
@@ -53,8 +53,8 @@ static int ArgsProcessing(FILE *source, Command *command, char *b_code, size_t *
             size_t addr = ULLONG_MAX;
             sscanf(arg + 1, "%zu", &addr);
 
-            EXEC_ASSERT(SetVal(command, b_code, pos, sizeof(Command)), return EXIT_FAILURE);
-            EXEC_ASSERT(SetVal(&addr  , b_code, pos, sizeof(size_t )), return EXIT_FAILURE);
+            SetVal(command, b_code, pos, sizeof(Command));
+            SetVal(&addr  , b_code, pos, sizeof(size_t ));
         }
     }
     else if(RegNameCheck(arg))
@@ -63,8 +63,8 @@ static int ArgsProcessing(FILE *source, Command *command, char *b_code, size_t *
 
         unsigned char reg_id = (unsigned char)(arg[1] - 'a');
 
-        EXEC_ASSERT(SetVal(command, b_code, pos, sizeof(Command)), return EXIT_FAILURE);
-        EXEC_ASSERT(SetVal(&reg_id, b_code, pos, sizeof(char   )), return EXIT_FAILURE);
+        SetVal(command, b_code, pos, sizeof(Command));
+        SetVal(&reg_id, b_code, pos, sizeof(char   ));
     }
     else
     {
@@ -81,8 +81,8 @@ static int ArgsProcessing(FILE *source, Command *command, char *b_code, size_t *
             }
         }
 
-        EXEC_ASSERT(SetVal(command, b_code, pos, sizeof(Command)), return EXIT_FAILURE);
-        EXEC_ASSERT(SetVal(&offset, b_code, pos, sizeof(size_t )), return EXIT_FAILURE);
+        SetVal(command, b_code, pos, sizeof(Command));
+        SetVal(&offset, b_code, pos, sizeof(size_t ));
     }
 
     return EXIT_SUCCESS;
@@ -128,12 +128,15 @@ static int AsmInstruction(FILE *source, char *b_code, size_t *pos, Label *labels
     if(*cmd == ';') return CommentsProcessing(source);
 
     size_t cmd_len = strlen(cmd);
-    if(cmd[cmd_len - 1] == ':') return LabelsProcessing(cmd, cmd_len, labels, labels_pos, pos);
+    if(cmd[cmd_len - 1] == ':')
+    {
+        return LabelsProcessing(cmd, cmd_len, labels, labels_pos, pos);
+    }
 
 #define DEF_CMD(name, code, n_args, ...)    if(strcmp(cmd, #name) == 0) {\
                                                 Command command = {code, n_args, NO_ARG};\
                                                 \
-                                                EXEC_ASSERT(!ArgsProcessing(source, &command, b_code, pos, labels), return EXIT_FAILURE);\
+                                                ArgsProcessing(source, &command, b_code, pos, labels);\
                                                 \
                                                 return EXIT_SUCCESS;\
                                             } else
@@ -147,12 +150,13 @@ static int AsmInstruction(FILE *source, char *b_code, size_t *pos, Label *labels
 static void AsmOutBin(char *b_code, size_t pos)
 {
     FILE *output_bin = fopen("code.bin", "wb");
+
     ASSERT(output_bin, return);
 
-    fwrite(KEYWORD , sizeof(unsigned), 1, output_bin);
-    fwrite(&ASM_VER, sizeof(char)    , 1, output_bin);
-    fwrite(&pos    , sizeof(size_t)  , 1, output_bin);
-    fwrite(b_code  , pos             , 1, output_bin);
+    fwrite(KEYWORD , sizeof(KEYWORD) - 1, 1, output_bin);
+    fwrite(&ASM_VER, sizeof(ASM_VER)    , 1, output_bin);
+    fwrite(&pos    , sizeof(pos)        , 1, output_bin);
+    fwrite(b_code  , pos                , 1, output_bin);
 
     fclose(output_bin);
 }
@@ -162,12 +166,13 @@ int Assembler(const char path[])
     ASSERT(path, return EXIT_FAILURE);
 
     FILE *code = fopen(path, "rb");
+
     ASSERT(code, return EXIT_FAILURE);
 
     size_t pos = 0;
     char *b_code = (char *)calloc(UINT_MAX, sizeof(char));
-    ASSERT(b_code, fclose(code);
-                   return EXIT_FAILURE);
+
+    ASSERT(b_code, fclose(code); return EXIT_FAILURE);
 
     size_t labels_pos        = 0;
     Label labels[MAX_LABELS] = {};
@@ -185,13 +190,16 @@ int Assembler(const char path[])
             exit_status = AsmInstruction(code, b_code, &pos, labels, &labels_pos);
         }
 
-        if(exit_status != EOF)
+        if(exit_status == EOF)
+        {
+            exit_status = EXIT_SUCCESS;
+        }
+        else
         {
             LOG("Error: %s Compilation error.\n", path);
 
             break;
         }
-        exit_status = EXIT_SUCCESS;
     }
 
     AsmOutBin(b_code, pos);

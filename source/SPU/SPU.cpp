@@ -11,22 +11,20 @@ Processor SPUCtor(void)
     Processor SPU = {};
 
     SPU.STEIN = (char *)calloc(RAM_SIZE, sizeof(char));
+
     ASSERT(SPU.STEIN, return {});
 
     memset(SPU.STEIN, ' ', RAM_SIZE);
 
-    SPU.SPU_stack   = StackCtor(4);
+    SPU.SPU_stack   = StackCtor(4); //TODO check
     SPU.CALLS_stack = StackCtor(4);
-
-    ASSERT(SPU.SPU_stack.data && SPU.CALLS_stack.data, free(SPU.STEIN);
-                                                       return {});
 
     return SPU;
 }
 
 int SPUDtor(Processor *SPU)
 {
-    SPU_VER(SPU, EXIT_FAILURE);
+    SPU_VERIFICATION(SPU, EXIT_FAILURE);
 
     free(SPU->STEIN);
     SPU->STEIN = NULL;
@@ -40,7 +38,7 @@ int SPUDtor(Processor *SPU)
 
 static int ExecInstruction(char *instructions, size_t *pos, Processor *SPU)
 {
-    SPU_VER(SPU, EXIT_FAILURE);
+    SPU_VERIFICATION(SPU, EXIT_FAILURE);
 
     Command cmd = {};
 
@@ -67,15 +65,17 @@ int Execute(const char *const path, Processor *SPU)
 {
     ASSERT(path, return EXIT_FAILURE);
 
-    SPU_VER(SPU, EXIT_FAILURE);
+    SPU_VERIFICATION(SPU, EXIT_FAILURE);
 
     char *instructions = GetInst(path, &SPU->size);
+
     ASSERT(instructions, return EXIT_FAILURE);
 
     SPU->name = strdup(path);
 
     size_t pos      = 0;
     int exit_status = 0;
+
     while(!exit_status)
     {
         exit_status = ExecInstruction(instructions, &pos, SPU);
@@ -83,13 +83,16 @@ int Execute(const char *const path, Processor *SPU)
 
     free(instructions);
 
-    if(exit_status != EOF)
+    if(exit_status == EOF)
+    {
+        exit_status = EXIT_SUCCESS;
+    }
+    else
     {
         LOG("Error: %s exec error.\n", path);
 
         SPUDump(SPU);
     }
-    else exit_status = EXIT_SUCCESS;
 
     ClearStack(&SPU->SPU_stack  );
     ClearStack(&SPU->CALLS_stack);
@@ -113,15 +116,15 @@ void SPUDump(Processor *SPU)
     ASSERT(SPU->registers, return);
 
     LOG("\n""registers:\n");
-    for(int i = 0; i < REG_COUNT; i++) LOG("r%cx:\t[" DTS "]\n", (char)('a' + i), SPU->registers[i]);
+    for(int i = 0; i < REG_COUNT; i++) LOG("r%cx:\t[" DATA_FORMAT "]\n", (char)('a' + i), SPU->registers[i]);
     LOG("\n\n\n");
 }
 
 #ifdef PROTECT
-int SPUVer(Processor *SPU)
+bool IsSPUValid(Processor *SPU)
 {
-    ASSERT(SPU && SPU->STEIN, return EXIT_FAILURE);
+    ASSERT(SPU && SPU->STEIN, return false);
 
-    return (StackVer(&SPU->SPU_stack) || StackVer(&SPU->CALLS_stack));
+    return (IsStackValid(&SPU->SPU_stack) && IsStackValid(&SPU->CALLS_stack));
 }
 #endif

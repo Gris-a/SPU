@@ -2,17 +2,23 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../include/stack.h"
+#include "../../include/stack/stack.h"
 
 Stack StackCtor(const size_t capacity)
 {
-    ASSERT(capacity, return {});
+    if(capacity == 0)
+    {
+        LOG("Capacity should be greater than zero.\n");
+
+        return {};
+    }
 
     Stack stack = {};
 
     stack.capacity = capacity;
 
     stack.data = (data_t *)calloc(capacity * sizeof(data_t), sizeof(char));
+
     ASSERT(stack.data, return {});
 
     return stack;
@@ -20,9 +26,9 @@ Stack StackCtor(const size_t capacity)
 
 int StackDtor(Stack *stack)
 {
-    STACK_VER(stack, EXIT_FAILURE);
+    STACK_VERIFICATION(stack, EXIT_FAILURE);
 
-    stack->size     = ULLONG_MAX;
+    stack->size     = 0;
     stack->capacity = 0;
 
     free(stack->data);
@@ -32,18 +38,19 @@ int StackDtor(Stack *stack)
 }
 
 
-static int OptimalExpansion(Stack *stack)
+static int StackExpansion(Stack *stack)
 {
     if(stack->size == stack->capacity)
     {
-        data_t *temp_ptr = (data_t *)realloc(stack->data, sizeof(data_t) * stack->capacity * 2);
-        ASSERT(temp_ptr, return EXIT_FAILURE);
+        data_t *data_r = (data_t *)realloc(stack->data, sizeof(data_t) * stack->capacity * 2);
+
+        ASSERT(data_r, return EXIT_FAILURE);
 
         stack->capacity *= 2;
 
-        stack->data = temp_ptr;
+        stack->data = data_r;
 
-        EXEC_ASSERT(memset(stack->data + stack->size, 0, sizeof(data_t) * stack->size), return EXIT_FAILURE);
+        memset(stack->data + stack->size, 0, sizeof(data_t) * stack->size);
     }
 
     return EXIT_SUCCESS;
@@ -51,26 +58,28 @@ static int OptimalExpansion(Stack *stack)
 
 int PushStack(Stack *stack, const data_t val)
 {
-    STACK_VER(stack, EXIT_FAILURE);
+    STACK_VERIFICATION(stack, EXIT_FAILURE);
 
-    EXEC_ASSERT(!OptimalExpansion(stack), return EXIT_FAILURE);
+    stack->data[stack->size] = val;
+    stack->size++;
 
-    stack->data[stack->size++] = val;
+    int exit_status = StackExpansion(stack);
 
-    return EXIT_SUCCESS;
+    return exit_status;
 }
 
 
-static int OptimalShrink(Stack *stack)
+static int StackShrink(Stack *stack)
 {
     if(stack->size * 4 == stack->capacity)
     {
-        data_t *temp_ptr = (data_t *)realloc(stack->data, sizeof(data_t) * stack->capacity / 2);
-        ASSERT(temp_ptr, return EXIT_FAILURE);
+        data_t *data_r = (data_t *)realloc(stack->data, sizeof(data_t) * stack->capacity / 2);
+
+        ASSERT(data_r, return EXIT_FAILURE);
 
         stack->capacity /= 2;
 
-        stack->data = temp_ptr;
+        stack->data = data_r;
     }
 
     return EXIT_SUCCESS;
@@ -78,60 +87,67 @@ static int OptimalShrink(Stack *stack)
 
 int PopStack(Stack *stack, data_t *ret_val)
 {
-    STACK_VER(stack, EXIT_FAILURE);
+    STACK_VERIFICATION(stack, EXIT_FAILURE);
 
-    ASSERT(stack->size != 0, return EXIT_FAILURE);
+    if(stack->size == 0)
+    {
+        LOG("Stack underflow.\n");
+
+        return EXIT_FAILURE;
+    }
 
     stack->size--;
 
     if(ret_val) *ret_val = stack->data[stack->size];
     stack->data[stack->size] = 0;
 
-    EXEC_ASSERT(!OptimalShrink(stack), return EXIT_FAILURE);
+    int exit_status = StackShrink(stack);
 
-    return EXIT_SUCCESS;
+    return exit_status;
 }
 
 int ClearStack(Stack *stack)
 {
-    STACK_VER(stack, EXIT_FAILURE);
+    STACK_VERIFICATION(stack, EXIT_FAILURE);
 
-    EXEC_ASSERT(memset(stack->data, 0, sizeof(data_t) * stack->size), return EXIT_FAILURE);
+    memset(stack->data, 0, sizeof(data_t) * stack->size);
+
     stack->size = 0;
 
-    EXEC_ASSERT(!OptimalShrink(stack), return EXIT_FAILURE);
+    int exit_status = StackShrink(stack);
 
-    return EXIT_SUCCESS;
+    return exit_status;
 }
 
 void StackDump(Stack *stack)
 {
     ASSERT(stack, return);
 
-    LOG("Stack[%p]:         \n"
-        "\tsize     = %zu;  \n"
-        "\tcapacity = %zu;  \n"
-        "\tdata[%p]:        \n", stack, stack->size, stack->capacity, stack->data);
+    LOG("Stack[%p]:       \n"
+        "\tsize     = %zu;\n"
+        "\tcapacity = %zu;\n"
+        "\tdata[%p]:      \n", stack, stack->size, stack->capacity, stack->data);
 
-    ASSERT(stack->data, return);
+    if(!stack->data) return;
 
     for(size_t i = 0; i < stack->capacity; i++)
     {
         LOG("\t\t");
         LOG((i < stack->size) ? "*" : " ");
-        LOG("[%3zu] = " DTS "\n", i, stack->data[i]);
+        LOG("[%3zu] = " DATA_FORMAT "\n", i, stack->data[i]);
     }
 }
 
 #ifdef PROTECT
-int StackVer(Stack *stack)
+bool IsStackValid(Stack *stack)
 {
-    ASSERT(stack      , return EXIT_FAILURE);
-    ASSERT(stack->data, return EXIT_FAILURE);
+    ASSERT(stack      , return false);
+    ASSERT(stack->data, return false);
 
-    ASSERT(0 != stack->capacity && stack->capacity <= UINT_MAX, return EXIT_FAILURE);
-    ASSERT(stack->size <= stack->capacity                     , return EXIT_FAILURE);
+    ASSERT(stack->capacity <= UINT_MAX   , return false);
+    ASSERT(stack->capacity != 0          , return false);
+    ASSERT(stack->size <= stack->capacity, return false);
 
-    return EXIT_SUCCESS;
+    return true;
 }
 #endif

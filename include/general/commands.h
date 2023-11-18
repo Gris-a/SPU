@@ -4,16 +4,16 @@
 
 #define ARG_TYPE cmd.arg_t
 
-#define DO_PUSH(arg)                    EXEC_ASSERT(!PushStack(&SPU->SPU_stack, arg), return EXIT_FAILURE)
-#define DO_POP(arg)                     EXEC_ASSERT(!PopStack (&SPU->SPU_stack, arg), return EXIT_FAILURE)
+#define DO_PUSH(arg)                    PushStack(&SPU->SPU_stack, arg)
+#define DO_POP(arg)                     PopStack (&SPU->SPU_stack, arg)
 
-#define SET_RET                         EXEC_ASSERT(!PushStack(&SPU->CALLS_stack, *(data_t *)pos), return EXIT_FAILURE)
-#define GET_RET(arg)                    EXEC_ASSERT(!PopStack (&SPU->CALLS_stack,  (data_t *)arg), return EXIT_FAILURE)
+#define SET_RET                         PushStack(&SPU->CALLS_stack, *(data_t *)pos)
+#define GET_RET(arg)                    PopStack (&SPU->CALLS_stack,  (data_t *)arg)
 
-#define MEM_SET(arg, offset)            if(!memcpy(RAM + offset * sizeof(arg), &arg, sizeof(arg))) return EXIT_FAILURE
-#define MEM_GET(arg, offset)            if(!memcpy(&arg, RAM + offset * sizeof(arg), sizeof(arg))) return EXIT_FAILURE
+#define MEM_SET(arg, offset)            memcpy(RAM + offset * sizeof(arg), &arg, sizeof(arg))
+#define MEM_GET(arg, offset)            memcpy(&arg, RAM + offset * sizeof(arg), sizeof(arg))
 
-#define GET_VAL(val)                    if(!GetVal(&val, instructions, pos, sizeof(val))) return EXIT_FAILURE
+#define GET_VAL(val)                    GetVal(&val, instructions, pos, sizeof(val))
 
 #define SET_POS(val)                    *pos = val
 
@@ -127,7 +127,7 @@ DEF_CMD(sqrt, 9, 0, {
 
 DEF_CMD(in, 10, 0, {
         data_t temp = 0;
-        scanf(DTS, &temp);
+        scanf(DATA_FORMAT, &temp);
 
         DO_PUSH(temp);
 
@@ -138,7 +138,7 @@ DEF_CMD(out, 11, 0, {
         data_t temp = 0;
         DO_POP(&temp);
 
-        printf(DTS"\n", temp);
+        printf(DATA_FORMAT "\n", temp);
 
         return EXIT_SUCCESS;
         })
@@ -322,22 +322,22 @@ DEF_CMD(pt, 23, 1, {
 DEF_CMD(draw, 24, 0, {
         system("clear");
 
-        for(int i = 0; i <= 100; i++) putchar('_');
+        for(int i = 0; i <= SCREEN_WIDTH; i++) putchar('_');
         putchar('\n');
 
-        for(int i = 0; i < 40; i++)
+        for(int i = 0; i < SCREEN_HEIGHT; i++)
         {
             putchar('|');
-            for(int j = 0; j < 100; j++)
+            for(int j = 0; j < SCREEN_WIDTH; j++)
             {
-                putchar(RAM[i * 100 + j]);
+                putchar(RAM[i * SCREEN_WIDTH + j]);
             }
             putchar('|');
 
             putchar('\n');
         }
 
-        for(int i = 0; i <= 100; i++) putchar('_');
+        for(int i = 0; i <= SCREEN_WIDTH; i++) putchar('_');
         putchar('\n');
 
         return EXIT_SUCCESS;
