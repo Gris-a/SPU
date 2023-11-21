@@ -27,11 +27,11 @@ const int SCREEN_HEIGHT = 40;
 
 #ifdef PROTECT
 #define SPU_VERIFICATION(SPU_ptr, ret_val_on_fail)   if(!IsSPUValid(SPU_ptr))\
-                                            {\
-                                                LOG("%s:%s: Error: invalid SPU.\n", __FILE__, __PRETTY_FUNCTION__);\
-                                                SPU_DUMP(SPU_ptr);\
-                                                return ret_val_on_fail;\
-                                            }
+                                                     {\
+                                                         LOG("%s:%s: Error: invalid SPU.\n", __FILE__, __PRETTY_FUNCTION__);\
+                                                         SPU_DUMP(SPU_ptr);\
+                                                         return ret_val_on_fail;\
+                                                     }
 #else
 #define SPU_VERIFICATION(...)
 #endif

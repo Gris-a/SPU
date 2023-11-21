@@ -51,6 +51,12 @@ L1:
 L2:
     call Draw_Circle
     call Draw_Circle
+    call Draw_Circle
+    call Draw_Circle
+    call Draw_Circle
+    call Draw_Circle
+
+
     rst
 
     push rax

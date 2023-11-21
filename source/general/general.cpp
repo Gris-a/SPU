@@ -11,9 +11,6 @@ static bool IsFormatValid(const char *const path, FILE *b_code)
     if(b_code_keyword != *(const unsigned *)KEYWORD)
     {
         LOG("Error: %s Not supported format: %#04x.\n", path, b_code_keyword);
-
-        fclose(b_code);
-
         return false;
     }
 
@@ -25,8 +22,6 @@ static bool IsFormatValid(const char *const path, FILE *b_code)
         LOG("Error: incorrect ASM version %d in %s.\n"
                         "Supported ASM version: %d.\n"
                         "Supported SPU version: %d.\n", b_code_ASM_ver, path, ASM_VER, SPU_VER);
-        fclose(b_code);
-
         return false;
     }
 
@@ -38,24 +33,24 @@ char *GetInst(const char *const path, size_t *size)
     ASSERT(path, return NULL);
 
     FILE *b_code = fopen(path, "rb");
-
-    ASSERT(b_code, return NULL);
+    if(!b_code)
+    {
+        LOG("No such file: \"%s\"", path);
+        return NULL;
+    }
 
     if(!IsFormatValid(path, b_code))
     {
         fclose(b_code);
-
         return NULL;
     }
 
     fread(size, sizeof(size_t), 1, b_code);
 
     char *instructions = (char *)calloc(*size, sizeof(char));
-
     ASSERT(instructions, fclose(b_code); return NULL);
 
     fread(instructions, sizeof(char), *size, b_code);
-
     fclose(b_code);
 
     return instructions;

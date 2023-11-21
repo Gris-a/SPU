@@ -1,21 +1,23 @@
 #define REGS SPU->registers
 
+#define DOMAIN SPU->size
+
 #define RAM SPU->STEIN
 
 #define ARG_TYPE cmd.arg_t
 
-#define DO_PUSH(arg)                    PushStack(&SPU->SPU_stack, arg)
-#define DO_POP(arg)                     PopStack (&SPU->SPU_stack, arg)
+#define DO_PUSH(arg)                    if(PushStack(&SPU->SPU_stack, arg)) return EXIT_FAILURE
+#define DO_POP(arg)                     if(PopStack (&SPU->SPU_stack, arg)) return EXIT_FAILURE
 
-#define SET_RET                         PushStack(&SPU->CALLS_stack, *(data_t *)pos)
-#define GET_RET(arg)                    PopStack (&SPU->CALLS_stack,  (data_t *)arg)
+#define SET_RET                         if(PushStack(&SPU->CALLS_stack, *(data_t *)pos)) return EXIT_FAILURE
+#define GET_RET(arg)                    if(PopStack (&SPU->CALLS_stack,  (data_t *)arg)) return EXIT_FAILURE
 
 #define MEM_SET(arg, offset)            memcpy(RAM + offset * sizeof(arg), &arg, sizeof(arg))
 #define MEM_GET(arg, offset)            memcpy(&arg, RAM + offset * sizeof(arg), sizeof(arg))
 
-#define GET_VAL(val)                    GetVal(&val, instructions, pos, sizeof(val))
+#define GET_VAL(val)                    if(!GetVal(&val, instructions, pos, sizeof(val))) return EXIT_FAILURE
 
-#define SET_POS(val)                    *pos = val
+#define SET_POS(val)                    if((*pos = val) > DOMAIN) {LOG("Segmentation fault.\n"); return EXIT_FAILURE;}
 
 #define REG_ID_CHECK(reg_id)            (0 <= reg_id && reg_id < REG_COUNT)
 
@@ -61,7 +63,6 @@ DEF_CMD(div , 4 , 0, {
         if(temp1 == 0)
         {
             LOG("Error: division by zero\n");
-
             return EXIT_FAILURE;
         }
 
@@ -116,7 +117,6 @@ DEF_CMD(sqrt, 9, 0, {
         if(temp < 0)
         {
             LOG("Error: sqrt of negative value\n");
-
             return EXIT_FAILURE;
         }
 
@@ -154,7 +154,6 @@ DEF_CMD(pop, 12, 1, {
                 if(!REG_ID_CHECK(reg_id))
                 {
                     LOG("Error: Unknown register id: %d.\n", reg_id);
-
                     return EXIT_FAILURE;
                 }
 
@@ -212,7 +211,6 @@ DEF_CMD(push, 13, 1, {
                 if(!REG_ID_CHECK(reg_id))
                 {
                     LOG("Error: Unknown register id: %d.\n", reg_id);
-
                     return EXIT_FAILURE;
                 }
 

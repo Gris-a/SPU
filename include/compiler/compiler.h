@@ -4,8 +4,8 @@
 #include "../general/general.h"
 
 const int N_COMPILATIONS = 2;
-const int MAX_LABELS     = 50;
-const int MAX_LEN        = 100;
+const int MAX_LABELS    = 50;
+const int MAX_LEN      = 100;
 
 struct Label
 {
@@ -13,6 +13,6 @@ struct Label
     size_t pos;
 };
 
-int Assembler(const char path[]);
+int Assembler(const char * const path);
 
 #endif //COMPILER_H

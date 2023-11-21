@@ -123,7 +123,10 @@ static int AsmInstruction(FILE *source, char *b_code, size_t *pos, Label *labels
 {
     char cmd[MAX_LEN] = {};
 
-    if(fscanf(source, "%s", cmd) == EOF) return EOF;
+    char fmt[MAX_LEN] = {};
+    sprintf(fmt, " %%%ds", MAX_LEN - 1);
+
+    if(fscanf(source, fmt, cmd) == EOF) return EOF;
 
     if(*cmd == ';') return CommentsProcessing(source);
 
@@ -133,7 +136,8 @@ static int AsmInstruction(FILE *source, char *b_code, size_t *pos, Label *labels
         return LabelsProcessing(cmd, cmd_len, labels, labels_pos, pos);
     }
 
-#define DEF_CMD(name, code, n_args, ...)    if(strcmp(cmd, #name) == 0) {\
+#define DEF_CMD(name, code, n_args, ...)    if(strcmp(cmd, #name) == 0)\
+                                            {\
                                                 Command command = {code, n_args, NO_ARG};\
                                                 \
                                                 ArgsProcessing(source, &command, b_code, pos, labels);\
@@ -150,7 +154,6 @@ static int AsmInstruction(FILE *source, char *b_code, size_t *pos, Label *labels
 static void AsmOutBin(char *b_code, size_t pos)
 {
     FILE *output_bin = fopen("code.bin", "wb");
-
     ASSERT(output_bin, return);
 
     fwrite(KEYWORD , sizeof(KEYWORD) - 1, 1, output_bin);
@@ -161,17 +164,20 @@ static void AsmOutBin(char *b_code, size_t pos)
     fclose(output_bin);
 }
 
-int Assembler(const char path[])
+
+int Assembler(const char *const path)
 {
     ASSERT(path, return EXIT_FAILURE);
 
     FILE *code = fopen(path, "rb");
-
-    ASSERT(code, return EXIT_FAILURE);
+    if(!code)
+    {
+        LOG("No such file: \"%s\"", path);
+        return EXIT_FAILURE;
+    }
 
     size_t pos = 0;
     char *b_code = (char *)calloc(UINT_MAX, sizeof(char));
-
     ASSERT(b_code, fclose(code); return EXIT_FAILURE);
 
     size_t labels_pos        = 0;
@@ -197,7 +203,6 @@ int Assembler(const char path[])
         else
         {
             LOG("Error: %s Compilation error.\n", path);
-
             break;
         }
     }

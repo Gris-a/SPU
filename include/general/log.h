@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define PROTECT
+// #define PROTECT
 
 #ifndef LOG_CPP
 extern FILE *LOG_FILE;
